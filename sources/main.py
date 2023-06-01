@@ -125,18 +125,21 @@ async def collect_user_repositories() -> Dict:
     """
     Collects information about all the user repositories available.
 
+    Side note: "cn" stands for contributed nodes but is shortened to conform to the code style
+
     :returns: Complete list of user repositories.
     """
     DBM.i("Getting user repositories list...")
     repositories = await DM.get_remote_graphql("user_repository_list", username=GHM.USER.login, id=GHM.USER.node_id)
+    repositories["data"]["user"]["repositories"]["nodes"] = [repo for repo in repositories["data"]["user"]["repositories"]["nodes"] if repo is not None]
     repo_names = [repo["name"] for repo in repositories["data"]["user"]["repositories"]["nodes"]]
     DBM.g("\tUser repository list collected!")
 
     contributed = await DM.get_remote_graphql("repos_contributed_to", username=GHM.USER.login)
-    contributed_nodes = [r for r in contributed["data"]["user"]["repositoriesContributedTo"]["nodes"] if r["name"] not in repo_names and not r["isFork"]]
+    cn = [r for r in contributed["data"]["user"]["repositoriesContributedTo"]["nodes"] if r is not None and r["name"] not in repo_names and not r["isFork"]]
     DBM.g("\tUser contributed to repository list collected!")
 
-    repositories["data"]["user"]["repositories"]["nodes"] += contributed_nodes
+    repositories["data"]["user"]["repositories"]["nodes"] += cn
     return repositories
 
 
